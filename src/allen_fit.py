@@ -9,15 +9,15 @@ from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
 
 parser = argparse.ArgumentParser()
 parser.add_argument("save_path")
-parser.add_argument("--data", default="data.pkl")
-parser.add_argument("--rnn", choices=["LSTM", "GRU"], default="LSTM")
+parser.add_argument("--data", default="data/data.pkl")
+parser.add_argument("--nsamples", type=int)
 parser.add_argument("--embed_size", type=int, default=300)
 parser.add_argument("--hidden_size", type=int, default=512)
-parser.add_argument("--batch_size", type=int, default=32)
+parser.add_argument("--batch_size", type=int, default=256)
 parser.add_argument("--epochs", type=int, default=100)
 parser.add_argument("--validation_split", type=float, default=0.05)
 parser.add_argument("--shuffle", choices=['batch', 'true', 'false'], default='true')
-parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='rmsprop')
+parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
 parser.add_argument("--patience", type=int, default=10)
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
 args = parser.parse_args()
@@ -25,6 +25,11 @@ args = parser.parse_args()
 print "Loading data..."
 questions, answers, correct = pickle.load(open(args.data, "rb"))
 assert questions.shape[0] == answers.shape[0] == correct.shape[0]
+
+if args.nsamples is not None:
+  questions = questions[:args.nsamples]
+  answers = answers[:args.nsamples]
+  correct = correct[:args.nsamples]
 
 vocab_size = max(np.max(questions), np.max(answers)) + 1
 print "Vocabulary size:", vocab_size, "Questions: ", questions.shape, "Answers: ", answers.shape, "Correct: ", correct.shape
