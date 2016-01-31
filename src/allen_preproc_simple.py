@@ -6,8 +6,8 @@ from keras.preprocessing.sequence import pad_sequences
 import cPickle as pickle
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--data_path", default="data/simple_shuffled.pkl")
-parser.add_argument("--tokenizer_save_path", default="model/tokenizer.pkl")
+parser.add_argument("data_path")
+parser.add_argument("--tokenizer_save_path")
 parser.add_argument("--sequences_save_path")
 parser.add_argument("--data", default="/storage/hpc_tanel/allenAI/X_studystack_qa_cleaner_ranking_shuffled.txt")
 parser.add_argument("--max_words", type=int)

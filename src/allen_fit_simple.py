@@ -24,13 +24,11 @@ def cosine_similarity(y_true, y_pred):
     return T.sum(y_true * y_pred, axis=1, keepdims=False)
 
 def cosine_ranking_loss(y_true, y_pred):
-    MARGIN = 0.01
-    
     q = y_pred[0::3]
     a_correct = y_pred[1::3]
     a_incorrect = y_pred[2::3]
 
-    return mean(T.maximum(0., MARGIN - cosine_similarity(q, a_correct) + cosine_similarity(q, a_incorrect)) - y_true[0]*0, axis=-1)
+    return mean(T.maximum(0., args.margin - cosine_similarity(q, a_correct) + cosine_similarity(q, a_incorrect)) - y_true[0]*0, axis=-1)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("save_path")
@@ -43,11 +41,12 @@ parser.add_argument("--layers", type=int, default=1)
 parser.add_argument("--dropout", type=float, default=0)
 parser.add_argument("--bidirectional", action='store_true', default=False)
 parser.add_argument("--batch_size", type=int, default=300)
-parser.add_argument("--epochs", type=int, default=10)
+parser.add_argument("--epochs", type=int, default=100)
 parser.add_argument("--validation_split", type=float, default=0)
 parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
 #parser.add_argument("--patience", type=int, default=10)
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
+parser.add_argument("--margin", type=float, default=0.01)
 args = parser.parse_args()
 
 assert args.batch_size % 3 == 0

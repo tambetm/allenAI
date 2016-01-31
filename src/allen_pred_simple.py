@@ -48,6 +48,7 @@ parser.add_argument("--dropout", type=float, default=0)
 parser.add_argument("--bidirectional", action='store_true', default=False)
 parser.add_argument("--batch_size", type=int, default=300)
 parser.add_argument("--maxlen", type=int)
+parser.add_argument("--vocab_size", type=int)
 parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
 args = parser.parse_args()
@@ -90,6 +91,10 @@ print "Sequences maxlen:", maxlen
 texts = pad_sequences(sequences, maxlen=maxlen) 
 
 vocab_size = np.max(texts) + 1
+if args.vocab_size:
+  print "Overriding original vocabulary size", vocab_size
+  texts = np.minimum(texts, args.vocab_size - 1)
+  vocab_size = np.max(texts) + 1
 print "Vocabulary size:", vocab_size, "Texts: ", texts.shape
 
 if args.rnn == 'GRU':
