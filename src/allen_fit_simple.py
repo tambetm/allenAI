@@ -43,9 +43,8 @@ parser.add_argument("--layers", type=int, default=1)
 parser.add_argument("--dropout", type=float, default=0)
 parser.add_argument("--bidirectional", action='store_true', default=False)
 parser.add_argument("--batch_size", type=int, default=300)
-parser.add_argument("--epochs", type=int, default=100)
-parser.add_argument("--validation_split", type=float, default=0.1)
-parser.add_argument("--shuffle", choices=['batch', 'true', 'false'], default='true')
+parser.add_argument("--epochs", type=int, default=10)
+parser.add_argument("--validation_split", type=float, default=0)
 parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
 parser.add_argument("--patience", type=int, default=10)
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
@@ -106,16 +105,15 @@ if args.bidirectional:
 else:
   model.compile(optimizer=args.optimizer, loss=cosine_ranking_loss)
 
-callbacks=[ModelCheckpoint(filepath=args.save_path, verbose=1, save_best_only=True), 
-               EarlyStopping(patience=args.patience, verbose=1)]
+callbacks=[ModelCheckpoint(filepath=args.save_path, verbose=1, save_best_only=False)]
+#               EarlyStopping(patience=args.patience, verbose=1)]
 
 if args.bidirectional:
   model.fit({'input': texts, 'output': np.empty((texts.shape[0], args.hidden_size))}, 
       batch_size=args.batch_size, nb_epoch=args.epochs, 
       validation_split=args.validation_split, verbose=args.verbose, callbacks=callbacks,
-      shuffle=args.shuffle if args.shuffle=='batch' else True if args.shuffle=='true' else False)
+      shuffle=False)
 else:
   model.fit(texts, np.empty((texts.shape[0], args.hidden_size)), batch_size=args.batch_size, nb_epoch=args.epochs,
-      validation_split=args.validation_split,
-      shuffle=args.shuffle if args.shuffle=='batch' else True if args.shuffle=='true' else False,
-      verbose=args.verbose, callbacks=callbacks)
+      validation_split=args.validation_split, verbose=args.verbose, callbacks=callbacks,
+      shuffle=False)
