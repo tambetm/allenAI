@@ -117,7 +117,7 @@ model.summary()
 print "Compiling model..."
 model.compile(optimizer=args.optimizer, loss={'shared': cosine_ranking_loss})
 
-callbacks=[ModelCheckpoint(filepath=args.save_path, verbose=1, save_best_only=True), 
+callbacks=[ModelCheckpoint(filepath=args.save_path, verbose=1, save_best_only=False), 
                EarlyStopping(patience=args.patience, verbose=1)]
 model.fit({'question': questions, 'correct': correct, 'incorrect': incorrect, 'shared': targets}, 
     batch_size=args.batch_size, nb_epoch=args.epochs, 

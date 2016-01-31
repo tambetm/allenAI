@@ -51,6 +51,8 @@ parser.add_argument("--patience", type=int, default=10)
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
 args = parser.parse_args()
 
+assert args.batch_size % 3 == 0
+
 print "Loading data..."
 texts = pickle.load(open(args.data, "rb"))
 assert texts.shape[0] % 3 == 0
@@ -102,7 +104,7 @@ print "Compiling model..."
 if args.bidirectional:
   model.compile(optimizer=args.optimizer, loss={'output': cosine_ranking_loss})
 else:
-  model.compile(optimizer=args.optimizer, loss=cosine_ranking_loss, class_mode='binary')
+  model.compile(optimizer=args.optimizer, loss=cosine_ranking_loss)
 
 callbacks=[ModelCheckpoint(filepath=args.save_path, verbose=1, save_best_only=True), 
                EarlyStopping(patience=args.patience, verbose=1)]
@@ -114,6 +116,6 @@ if args.bidirectional:
       shuffle=args.shuffle if args.shuffle=='batch' else True if args.shuffle=='true' else False)
 else:
   model.fit(texts, np.empty((texts.shape[0], args.hidden_size)), batch_size=args.batch_size, nb_epoch=args.epochs,
-    validation_split=args.validation_split, show_accuracy=True,
-    shuffle=args.shuffle if args.shuffle=='batch' else True if args.shuffle=='true' else False,
-    verbose=args.verbose, callbacks=callbacks)
+      validation_split=args.validation_split,
+      shuffle=args.shuffle if args.shuffle=='batch' else True if args.shuffle=='true' else False,
+      verbose=args.verbose, callbacks=callbacks)
