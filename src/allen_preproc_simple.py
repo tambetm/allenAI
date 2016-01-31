@@ -6,8 +6,10 @@ from keras.preprocessing.sequence import pad_sequences
 import cPickle as pickle
 
 parser = argparse.ArgumentParser()
-parser.add_argument("save_path")
-parser.add_argument("--data", default="/storage/allenAI/X_studystack_qa_cleaner_ranking.txt")
+parser.add_argument("--data_path", default="data/simple_shuffled.pkl")
+parser.add_argument("--tokenizer_save_path", default="model/tokenizer.pkl")
+parser.add_argument("--sequences_save_path")
+parser.add_argument("--data", default="/storage/hpc_tanel/allenAI/X_studystack_qa_cleaner_ranking_shuffled.txt")
 parser.add_argument("--max_words", type=int)
 parser.add_argument("--maxlen", type=int)
 args = parser.parse_args()
@@ -27,6 +29,10 @@ tokenizer = Tokenizer(args.max_words)
 tokenizer.fit_on_texts(lines)
 print "Number of words: ", len(tokenizer.word_index)
 
+if args.tokenizer_save_path:
+  print "Saving tokenizer to %s..." % args.tokenizer_save_path
+  pickle.dump(tokenizer, open(args.tokenizer_save_path, "wb"), pickle.HIGHEST_PROTOCOL)
+
 wcounts = tokenizer.word_counts.items()
 wcounts.sort(key=lambda x: x[1], reverse=True)
 print "Most frequent words:", wcounts[:10]
@@ -41,7 +47,9 @@ print "Sample sequences:"
 for i in xrange(3):
   print sequences[i]
 
-pickle.dump(sequences, open("sequences.pkl", "wb"), pickle.HIGHEST_PROTOCOL)
+if args.sequences_save_path:
+  print "Saving sequences to %s..." % args.sequences_save_path
+  pickle.dump(sequences, open(args.sequences_save_path, "wb"), pickle.HIGHEST_PROTOCOL)
 
 if args.maxlen:
   maxlen = args.maxlen
@@ -57,6 +65,6 @@ for i in xrange(3):
   print sequences_padded[i]
 
 print "Saving results..."
-pickle.dump(sequences_padded, open(args.save_path, "wb"), pickle.HIGHEST_PROTOCOL)
+pickle.dump(sequences_padded, open(args.data_path, "wb"), pickle.HIGHEST_PROTOCOL)
 
 print "Done"

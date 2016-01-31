@@ -6,6 +6,9 @@ from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import recurrent
 from keras.models import Graph, Sequential
 from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
+from keras.preprocessing.text import Tokenizer
+from keras.preprocessing.sequence import pad_sequences
+import cPickle as pickle
 import theano.tensor as T
 from theano import function
 
@@ -23,9 +26,20 @@ def cosine_similarity(y_true, y_pred):
     y_pred = l2_normalize(y_pred, axis=1)
     return T.sum(y_true * y_pred, axis=1, keepdims=False)
 
+def cosine_ranking_loss(y_true, y_pred):
+    MARGIN = 0.01
+    
+    q = y_pred[0::3]
+    a_correct = y_pred[1::3]
+    a_incorrect = y_pred[2::3]
+
+    return mean(T.maximum(0., MARGIN - cosine_similarity(q, a_correct) + cosine_similarity(q, a_incorrect)) - y_true[0]*0, axis=-1)
+
 parser = argparse.ArgumentParser()
-parser.add_argument("csv_file")
 parser.add_argument("model_path")
+parser.add_argument("--train_csv", default="data/training_set.tsv")
+parser.add_argument("--valid_csv", default="data/validation_set.tsv")
+parser.add_argument("--tokenizer", default="model/tokenizer.pkl")
 parser.add_argument("--rnn", choices=["LSTM", "GRU"], default="GRU")
 parser.add_argument("--embed_size", type=int, default=300)
 parser.add_argument("--hidden_size", type=int, default=1024)
@@ -33,6 +47,9 @@ parser.add_argument("--layers", type=int, default=1)
 parser.add_argument("--dropout", type=float, default=0)
 parser.add_argument("--bidirectional", action='store_true', default=False)
 parser.add_argument("--batch_size", type=int, default=300)
+parser.add_argument("--maxlen", type=int)
+parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
+parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
 args = parser.parse_args()
 
 print "Loading data..."
@@ -42,7 +59,7 @@ answersA = []
 answersB = []
 answersC = []
 answersD = []
-with open(args.csv_file) as f:
+with open(args.train_csv) as f:
   reader = csv.reader(f, delimiter="\t", strict=True, quoting=csv.QUOTE_NONE)
   next(reader)  # ignore header
   for line in reader:
@@ -61,6 +78,16 @@ for i in xrange(3):
 
 texts = questions + answersA + answersB + answersC + answersD
 
+tokenizer = pickle.load(open(args.tokenizer, "rb"))
+sequences = tokenizer.texts_to_sequences(texts)
+
+if args.maxlen:
+  maxlen = args.maxlen
+else:
+  maxlen = max([len(s) for s in sequences])
+print "Sequences maxlen:", maxlen
+
+texts = pad_sequences(sequences, maxlen=maxlen) 
 
 vocab_size = np.max(texts) + 1
 print "Vocabulary size:", vocab_size, "Texts: ", texts.shape
@@ -101,6 +128,7 @@ else:
       model.add(Dropout(args.dropout))
 
 model.summary()
+model.load_weights(args.model_path)
 
 print "Compiling model..."
 if args.bidirectional:
@@ -109,11 +137,8 @@ else:
   model.compile(optimizer=args.optimizer, loss=cosine_ranking_loss)
 
 if args.bidirectional:
-  pred = model.fit({'input': texts, 'output': np.empty((texts.shape[0], args.hidden_size))}, 
-      batch_size=args.batch_size, nb_epoch=args.epochs, 
-      validation_split=args.validation_split, verbose=args.verbose, callbacks=callbacks,
-      shuffle=False)
+  pred = model.predict({'input': texts}, batch_size=args.batch_size, verbose=args.verbose)
 else:
-  model.fit(texts, np.empty((texts.shape[0], args.hidden_size)), batch_size=args.batch_size, nb_epoch=args.epochs,
-      validation_split=args.validation_split, verbose=args.verbose, callbacks=callbacks,
-      shuffle=False)
+  pred = model.predict(texts, batch_size=args.batch_size, verbose=args.verbose)
+
+print "Predictions: ", pred.shape
