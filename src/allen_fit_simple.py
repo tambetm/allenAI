@@ -47,6 +47,8 @@ parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
 #parser.add_argument("--patience", type=int, default=10)
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
 parser.add_argument("--margin", type=float, default=0.1)
+parser.add_argument("--dense_layers", type=int, default=0)
+parser.add_argument("--dense_activation", choices=['relu','sigmoid','tanh'], default='relu')
 args = parser.parse_args()
 
 assert args.batch_size % 3 == 0
@@ -95,6 +97,12 @@ else:
     model.add(RNN(args.hidden_size, return_sequences=False if i + 1 == args.layers else True))
     if args.dropout > 0:
       model.add(Dropout(args.dropout))
+  for i in xrange(args.dense_layers):
+    if i + 1 == args.dense_layers:
+      model.add(Dense(args.hidden_size, activation='linear'))
+    else:
+      model.add(Dense(args.hidden_size, activation=args.dense_activation))
+
 
 model.summary()
 
