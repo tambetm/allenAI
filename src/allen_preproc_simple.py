@@ -3,6 +3,7 @@ import csv
 import numpy as np
 from keras.preprocessing.text import Tokenizer
 from keras.preprocessing.sequence import pad_sequences
+from keras.preprocessing.text import base_filter
 import cPickle as pickle
 
 parser = argparse.ArgumentParser()
@@ -25,7 +26,7 @@ for i in xrange(3):
     print lines[i]
 
 print "Tokenizing data..."
-tokenizer = Tokenizer(args.max_words)
+tokenizer = Tokenizer(args.max_words, filters=base_filter().replace('_', ''))
 tokenizer.fit_on_texts(lines)
 print "Number of words: ", len(tokenizer.word_index)
 
