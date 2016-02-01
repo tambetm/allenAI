@@ -32,7 +32,7 @@ def cosine_ranking_loss(y_true, y_pred):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("save_path")
-parser.add_argument("--data", default="data/simple_shuffled.pkl")
+parser.add_argument("--data", default="data/studystack_full.pkl")
 parser.add_argument("--nsamples", type=int)
 parser.add_argument("--rnn", choices=["LSTM", "GRU"], default="GRU")
 parser.add_argument("--embed_size", type=int, default=300)
@@ -46,7 +46,9 @@ parser.add_argument("--validation_split", type=float, default=0)
 parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
 #parser.add_argument("--patience", type=int, default=10)
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
-parser.add_argument("--margin", type=float, default=0.01)
+parser.add_argument("--margin", type=float, default=0.1)
+parser.add_argument("--dense_layers", type=int, default=0)
+parser.add_argument("--dense_activation", choices=['relu','sigmoid','tanh'], default='relu')
 args = parser.parse_args()
 
 assert args.batch_size % 3 == 0
@@ -95,6 +97,12 @@ else:
     model.add(RNN(args.hidden_size, return_sequences=False if i + 1 == args.layers else True))
     if args.dropout > 0:
       model.add(Dropout(args.dropout))
+  for i in xrange(args.dense_layers):
+    if i + 1 == args.dense_layers:
+      model.add(Dense(args.hidden_size, activation='linear'))
+    else:
+      model.add(Dense(args.hidden_size, activation=args.dense_activation))
+
 
 model.summary()
 

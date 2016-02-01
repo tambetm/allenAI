@@ -27,18 +27,27 @@ def cosine_similarity(y_true, y_pred):
     return T.sum(y_true * y_pred, axis=1, keepdims=False)
 
 def cosine_ranking_loss(y_true, y_pred):
-    MARGIN = 0.01
-    
     q = y_pred[0::3]
     a_correct = y_pred[1::3]
     a_incorrect = y_pred[2::3]
 
-    return mean(T.maximum(0., MARGIN - cosine_similarity(q, a_correct) + cosine_similarity(q, a_incorrect)) - y_true[0]*0, axis=-1)
+    return mean(T.maximum(0., args.margin - cosine_similarity(q, a_correct) + cosine_similarity(q, a_incorrect)) - y_true[0]*0, axis=-1)
+
+def np_l2_normalize(x, axis):
+    norm = np.sqrt(np.sum(np.square(x), axis=axis, keepdims=True))
+    return x / norm
+
+def np_cosine_similarity(y_true, y_pred):
+    assert y_true.ndim == 2
+    assert y_pred.ndim == 2
+    y_true = np_l2_normalize(y_true, axis=1)
+    y_pred = np_l2_normalize(y_pred, axis=1)
+    return np.sum(y_true * y_pred, axis=1, keepdims=False)
 
 parser = argparse.ArgumentParser()
 parser.add_argument("model_path")
-parser.add_argument("--train_csv", default="data/training_set.tsv")
-parser.add_argument("--valid_csv", default="data/validation_set.tsv")
+parser.add_argument("csv_file")
+parser.add_argument("--write_predictions")
 parser.add_argument("--tokenizer", default="model/tokenizer.pkl")
 parser.add_argument("--rnn", choices=["LSTM", "GRU"], default="GRU")
 parser.add_argument("--embed_size", type=int, default=300)
@@ -51,33 +60,47 @@ parser.add_argument("--maxlen", type=int)
 parser.add_argument("--vocab_size", type=int)
 parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
 parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
+parser.add_argument("--margin", type=float, default=0.01)
+parser.add_argument("--dense_layers", type=int, default=0)
+parser.add_argument("--dense_activation", choices=['relu','sigmoid','tanh'], default='relu')
 args = parser.parse_args()
 
 print "Loading data..."
+ids = []
 questions = []
 corrects = []
 answersA = []
 answersB = []
 answersC = []
 answersD = []
-with open(args.train_csv) as f:
+with open(args.csv_file) as f:
   reader = csv.reader(f, delimiter="\t", strict=True, quoting=csv.QUOTE_NONE)
-  next(reader)  # ignore header
+  line = next(reader)  # ignore header
+  is_train_set = (len(line) == 7)
   for line in reader:
+    ids.append(line[0])
     questions.append(line[1])
-    corrects.append(line[2])
-    answersA.append(line[3])
-    answersB.append(line[4])
-    answersC.append(line[5])
-    answersD.append(line[6])
-print "Questions: ", len(questions), "Answers: ", len(corrects)
-assert len(questions) == len(corrects) == len(answersA) == len(answersB) == len(answersC) == len(answersD)
+    if is_train_set:
+      corrects.append(line[2])
+      answersA.append(line[3])
+      answersB.append(line[4])
+      answersC.append(line[5])
+      answersD.append(line[6])
+    else:
+      answersA.append(line[2])
+      answersB.append(line[3])
+      answersC.append(line[4])
+      answersD.append(line[5])
+print "Questions: ", len(questions)
+assert len(questions) == len(answersA) == len(answersB) == len(answersC) == len(answersD)
+assert not is_train_set or len(corrects) == len(questions)
 
 print "Sample question and answers:"
 for i in xrange(3):
-  print questions[i], "A:", answersA[i], "B:", answersB[i], "C:", answersC[i], "D:", answersD[i], "Correct: ", corrects[i]
+  print questions[i], "A:", answersA[i], "B:", answersB[i], "C:", answersC[i], "D:", answersD[i], "Correct: ", corrects[i] if is_train_set else '?'
 
 texts = questions + answersA + answersB + answersC + answersD
+print "Texts size:", len(texts)
 
 tokenizer = pickle.load(open(args.tokenizer, "rb"))
 sequences = tokenizer.texts_to_sequences(texts)
@@ -90,11 +113,10 @@ print "Sequences maxlen:", maxlen
 
 texts = pad_sequences(sequences, maxlen=maxlen) 
 
-vocab_size = np.max(texts) + 1
+vocab_size = tokenizer.nb_words if tokenizer.nb_words else len(tokenizer.word_index)+1
 if args.vocab_size:
   print "Overriding original vocabulary size", vocab_size
-  texts = np.minimum(texts, args.vocab_size - 1)
-  vocab_size = np.max(texts) + 1
+  vocab_size = args.vocab_size
 print "Vocabulary size:", vocab_size, "Texts: ", texts.shape
 
 if args.rnn == 'GRU':
@@ -131,8 +153,15 @@ else:
     model.add(RNN(args.hidden_size, return_sequences=False if i + 1 == args.layers else True))
     if args.dropout > 0:
       model.add(Dropout(args.dropout))
+  for i in xrange(args.dense_layers):
+    if i + 1 == args.dense_layers:
+      model.add(Dense(args.hidden_size, activation='linear'))
+    else:
+      model.add(Dense(args.hidden_size, activation=args.dense_activation))
 
 model.summary()
+
+print "Loading weights from %s" % args.model_path
 model.load_weights(args.model_path)
 
 print "Compiling model..."
@@ -143,7 +172,52 @@ else:
 
 if args.bidirectional:
   pred = model.predict({'input': texts}, batch_size=args.batch_size, verbose=args.verbose)
+  pred = pred['output']
 else:
   pred = model.predict(texts, batch_size=args.batch_size, verbose=args.verbose)
 
 print "Predictions: ", pred.shape
+
+qlen = int(pred.shape[0] / 5)
+questions = pred[0:qlen]
+answersA = pred[qlen:2*qlen]
+answersB = pred[2*qlen:3*qlen]
+answersC = pred[3*qlen:4*qlen]
+answersD = pred[4*qlen:5*qlen]
+print "Predicted vectors:", questions.shape, answersA.shape, answersB.shape, answersC.shape, answersD.shape
+
+print "Question:", questions[0,:4]
+print "Answer A:", answersA[0,:4]
+print "Answer B:", answersB[0,:4]
+print "Answer C:", answersC[0,:4]
+print "Answer D:", answersD[0,:4]
+
+sims = np.array([
+  np_cosine_similarity(questions, answersA),
+  np_cosine_similarity(questions, answersB),
+  np_cosine_similarity(questions, answersC),
+  np_cosine_similarity(questions, answersD)
+])
+print "Similarities:", sims.shape
+print "Question 1:", sims[:,0]
+print "Question 2:", sims[:,1]
+print "Question 3:", sims[:,2]
+
+preds = np.argmax(sims, axis=0)
+print "Predictions:", preds.shape
+print "Predicted answers:", preds[:3]
+
+preds = [chr(ord('A') + p) for p in preds]
+print "Predicted answers:", preds[:3]
+
+if args.write_predictions:
+  print "Writing predictions to", args.write_predictions
+  f = open(args.write_predictions, "w")
+  f.write("id,correctAnswer")
+  for i in xrange(len(preds)):
+    f.write("%s,%s" % (ids[i], preds[i]))
+  f.close()
+
+if is_train_set:
+  correct = sum([corrects[i] == p for i,p in enumerate(preds)])
+  print "Correct: %d Total: %d Accuracy: %f" % (correct, len(preds), float(correct) / len(preds))
