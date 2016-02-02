@@ -6,73 +6,12 @@ from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import recurrent
 from keras.layers.convolutional import Convolution1D, MaxPooling1D
 from keras.models import Graph, Sequential
-from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
+from keras.callbacks import ModelCheckpoint, EarlyStopping, LearningRateScheduler, Callback
 from keras.models import model_from_json
 import theano.tensor as T
 from theano import function
 from itertools import islice
 from predict import *
-
-MARGIN = 0.1
-
-def mean(x, axis=None, keepdims=False):
-    return T.mean(x, axis=axis, keepdims=keepdims)
-
-def l2_normalize(x, axis):
-    norm = T.sqrt(T.sum(T.square(x), axis=axis, keepdims=True))
-    return x / norm
-
-def cosine_similarity(y_true, y_pred):
-    assert y_true.ndim == 2
-    assert y_pred.ndim == 2
-    y_true = l2_normalize(y_true, axis=1)
-    y_pred = l2_normalize(y_pred, axis=1)
-    return T.sum(y_true * y_pred, axis=1, keepdims=False)
-
-def cosine_ranking_loss(y_true, y_pred):
-    q = y_pred[0::3]
-    a_correct = y_pred[1::3]
-    a_incorrect = y_pred[2::3]
-
-    return mean(T.maximum(0., MARGIN - cosine_similarity(q, a_correct) + cosine_similarity(q, a_incorrect)) - y_true[0]*0, axis=-1)
-
-def GESD(y_true, y_pred):
-    assert y_true.ndim == 2
-    assert y_pred.ndim == 2
-    y_true = l2_normalize(y_true, axis=1)
-    y_pred = l2_normalize(y_pred, axis=1)
-    eucledian_dist = T.sqrt(T.sum(T.square(y_true - y_pred), axis=1, keepdims=True))
-    part1 = 1.0 / (1.0 + eucledian_dist)
-    gamma = 1.0
-    c = 1.0
-    part2 = 1.0 / (1.0 + T.exp(-gamma * (T.sum(y_true * y_pred, axis=1, keepdims=False) + c)))
-    return T.sum(part1 * part2, axis=1, keepdims=False)
-
-def AESD(y_true, y_pred):
-    assert y_true.ndim == 2
-    assert y_pred.ndim == 2
-    y_true = l2_normalize(y_true, axis=1)
-    y_pred = l2_normalize(y_pred, axis=1)
-    eucledian_dist = T.sqrt(T.sum(T.square(y_true - y_pred), axis=1, keepdims=True))
-    part1 = 1.0 / (1.0 + eucledian_dist)
-    gamma = 1.0
-    c = 1.0
-    part2 = 1.0 / (1.0 + T.exp(-gamma * (T.sum(y_true * y_pred, axis=1, keepdims=False) + c)))
-    return T.sum(part1 + part2, axis=1, keepdims=False)
-
-def GESD_ranking_loss(y_true, y_pred):
-    q = y_pred[0::3]
-    a_correct = y_pred[1::3]
-    a_incorrect = y_pred[2::3]
-
-    return mean(T.maximum(0., MARGIN - GESD(q, a_correct) + GESD(q, a_incorrect)) - y_true[0]*0, axis=-1)
-
-def AESD_ranking_loss(y_true, y_pred):
-    q = y_pred[0::3]
-    a_correct = y_pred[1::3]
-    a_incorrect = y_pred[2::3]
-
-    return mean(T.maximum(0., MARGIN - AESD(q, a_correct) + AESD(q, a_incorrect)) - y_true[0]*0, axis=-1)
 
 def create_model(vocab_size, args):
   assert args.batch_size % 3 == 0, "Batch size must be multiple of 3"
@@ -130,8 +69,64 @@ def create_model(vocab_size, args):
   return model
 
 def compile_model(model, args):
-  global MARGIN
-  MARGIN = args.margin
+  def mean(x, axis=None, keepdims=False):
+      return T.mean(x, axis=axis, keepdims=keepdims)
+
+  def l2_normalize(x, axis):
+      norm = T.sqrt(T.sum(T.square(x), axis=axis, keepdims=True))
+      return x / norm
+
+  def cosine_similarity(y_true, y_pred):
+      assert y_true.ndim == 2
+      assert y_pred.ndim == 2
+      y_true = l2_normalize(y_true, axis=1)
+      y_pred = l2_normalize(y_pred, axis=1)
+      return T.sum(y_true * y_pred, axis=1, keepdims=False)
+
+  def cosine_ranking_loss(y_true, y_pred):
+      q = y_pred[0::3]
+      a_correct = y_pred[1::3]
+      a_incorrect = y_pred[2::3]
+
+      return mean(T.maximum(0., args.margin - cosine_similarity(q, a_correct) + cosine_similarity(q, a_incorrect)) - y_true[0]*0, axis=-1)
+
+  def GESD(y_true, y_pred):
+      assert y_true.ndim == 2
+      assert y_pred.ndim == 2
+      y_true = l2_normalize(y_true, axis=1)
+      y_pred = l2_normalize(y_pred, axis=1)
+      eucledian_dist = T.sqrt(T.sum(T.square(y_true - y_pred), axis=1, keepdims=True))
+      part1 = 1.0 / (1.0 + eucledian_dist)
+      gamma = 1.0
+      c = 1.0
+      part2 = 1.0 / (1.0 + T.exp(-gamma * (T.sum(y_true * y_pred, axis=1, keepdims=False) + c)))
+      return T.sum(part1 * part2, axis=1, keepdims=False)
+
+  def AESD(y_true, y_pred):
+      assert y_true.ndim == 2
+      assert y_pred.ndim == 2
+      y_true = l2_normalize(y_true, axis=1)
+      y_pred = l2_normalize(y_pred, axis=1)
+      eucledian_dist = T.sqrt(T.sum(T.square(y_true - y_pred), axis=1, keepdims=True))
+      part1 = 1.0 / (1.0 + eucledian_dist)
+      gamma = 1.0
+      c = 1.0
+      part2 = 1.0 / (1.0 + T.exp(-gamma * (T.sum(y_true * y_pred, axis=1, keepdims=False) + c)))
+      return T.sum(part1 + part2, axis=1, keepdims=False)
+
+  def GESD_ranking_loss(y_true, y_pred):
+      q = y_pred[0::3]
+      a_correct = y_pred[1::3]
+      a_incorrect = y_pred[2::3]
+
+      return mean(T.maximum(0., args.margin - GESD(q, a_correct) + GESD(q, a_incorrect)) - y_true[0]*0, axis=-1)
+
+  def AESD_ranking_loss(y_true, y_pred):
+      q = y_pred[0::3]
+      a_correct = y_pred[1::3]
+      a_incorrect = y_pred[2::3]
+
+      return mean(T.maximum(0., args.margin - AESD(q, a_correct) + AESD(q, a_incorrect)) - y_true[0]*0, axis=-1)
 
   if args.loss == 'cosine':
     loss = cosine_ranking_loss
@@ -169,6 +164,12 @@ def default_callbacks(args, callbacks=[]):
     callbacks.append(ModelCheckpoint(filepath="%s_{epoch:02d}_acc_{val_acc:.4f}.hdf5" % args.model_path, monitor="val_acc", verbose=1, save_best_only=False))
   if args.patience:
     callbacks.append(EarlyStopping(patience=args.patience, monitor="val_acc", verbose=1))
+  if args.lr_epochs:
+    def lr_scheduler(epoch):
+      lr = args.lr / 2**int(epoch / args.lr_epochs)
+      print "Epoch %d: learning rate %g" % (epoch + 1, lr)
+      return lr
+    callbacks.append(LearningRateScheduler(lr_scheduler))
   return callbacks
 
 def fit_data(model, data, args):
@@ -226,9 +227,12 @@ def add_model_params(parser):
   parser.add_argument("--loss", choices=['cosine', 'gesd', 'aesd'], default='cosine')
 
 def add_training_params(parser):
+  parser.add_argument("--validation_split", type=float, default=0)
+  parser.add_argument("--optimizer", choices=['adam', 'rmsprop', 'sgd'], default='adam')
+  parser.add_argument("--lr", type=float, default=0.01)
+  parser.add_argument("--momentum", type=float, default=0.9)
+  parser.add_argument("--lr_epochs", type=int, default=0)
   parser.add_argument("--samples_per_epoch", type=int, default=1500000)
   parser.add_argument("--epochs", type=int, default=100)
-  parser.add_argument("--validation_split", type=float, default=0)
-  parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
   parser.add_argument("--patience", type=int, default=10)
   parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)

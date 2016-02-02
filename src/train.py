@@ -63,7 +63,7 @@ def generate_training_data_text(data_path, tokenizer, args):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("model_path")
-  parser.add_argument("--data_path", default="data/studystack_full.pkl")
+  parser.add_argument("--data_path", default="/storage/hpc_tanel/allenAI/X_studystack_qa_cleaner_no_qm_ranking_shuffled.txt")
   parser.add_argument("--nsamples", type=int)
   parser.add_argument("--csv_file", default="data/training_set.tsv")
   parser.add_argument("--load_tokenizer", default="model/tokenizer_studystack_full.pkl")
