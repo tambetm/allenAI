@@ -102,9 +102,9 @@ def calculate_accuracy(preds, corrects):
 
 def write_predictions(file_path, ids, preds):
   with open(file_path, "w") as f:
-    f.write("id,correctAnswer")
+    f.write("id,correctAnswer\n")
     for i in xrange(len(preds)):
-      f.write("%s,%s" % (ids[i], preds[i]))
+      f.write("%s,%s\n" % (ids[i], preds[i]))
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -152,6 +152,7 @@ if __name__ == '__main__':
 
   if args.write_predictions:
     print "Writing predictions to", args.write_predictions
+    write_predictions(args.write_predictions, ids, preds)
 
   if len(corrects) > 0:
     calculate_accuracy(preds, corrects)
