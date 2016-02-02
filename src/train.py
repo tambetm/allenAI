@@ -69,7 +69,7 @@ if __name__ == '__main__':
   parser.add_argument("--load_tokenizer", default="model/tokenizer_studystack_full.pkl")
   parser.add_argument("--load_arch")
   parser.add_argument("--save_arch")
-  parser.add_argument("--generator", action="store_true", default=False)
+  parser.add_argument("--generator", action="store_true", default=True)
   parser.add_argument("--save_history")
   add_model_params(parser)
   add_training_params(parser)

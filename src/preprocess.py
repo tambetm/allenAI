@@ -21,7 +21,11 @@ def vocabulary_size(tokenizer):
 
 def text_to_data(lines, tokenizer, maxlen):
   sequences = tokenizer.texts_to_sequences(lines)
-  data = pad_sequences(sequences, maxlen=maxlen) 
+  # apply maxlen limitation only when sequences are longer
+  seqmaxlen = max([len(s) for s in sequences])
+  if seqmaxlen > maxlen:
+    seqmaxlen = maxlen
+  data = pad_sequences(sequences, maxlen=seqmaxlen) 
   return data
 
 def add_data_params(parser):

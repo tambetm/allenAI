@@ -88,7 +88,7 @@ def create_model(vocab_size, args):
     assert not args.pooling, "Pooling layer is not supported with bidirectional RNN"
     assert args.dense_layers == 0, "Dense layers are not supported with bidirectional RNN"
     model = Graph()
-    model.add_input(name="input", batch_input_shape=(args.batch_size,)+texts.shape[1:], dtype="uint")
+    model.add_input(name="input", batch_input_shape=(args.batch_size,1), dtype="uint")
     model.add_node(Embedding(vocab_size, args.embed_size, mask_zero=True), name="embed", input='input')
     for i in xrange(args.layers):
       model.add_node(RNN(args.hidden_size, return_sequences=False if i + 1 == args.layers else True), 
@@ -129,6 +129,7 @@ def create_model(vocab_size, args):
   return model
 
 def compile_model(model, args):
+  global MARGIN
   MARGIN = args.margin
 
   if args.loss == 'cosine':
