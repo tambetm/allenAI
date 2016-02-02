@@ -4,6 +4,7 @@ import numpy as np
 from keras.layers.embeddings import Embedding
 from keras.layers.core import Dense, Activation, Dropout
 from keras.layers import recurrent
+from keras.layers.convolutional import Convolution1D, MaxPooling1D
 from keras.models import Graph, Sequential
 from keras.callbacks import ModelCheckpoint, EarlyStopping, Callback
 from keras.models import model_from_json
@@ -107,7 +108,7 @@ def create_model(vocab_size, args):
     assert args.dense_layers == 0, "Bidirectional model doesn't support dense layers yet"
   else:
     model = Sequential()
-    model.add(Embedding(vocab_size, args.embed_size, mask_zero=True))
+    model.add(Embedding(vocab_size, args.embed_size, mask_zero=not args.convolution))
     if args.convolution:
       model.add(Convolution1D(nb_filter=args.conv_filters,
                           filter_length=args.conv_filter_length,
