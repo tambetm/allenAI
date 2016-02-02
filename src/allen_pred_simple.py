@@ -46,9 +46,9 @@ def np_cosine_similarity(y_true, y_pred):
 
 parser = argparse.ArgumentParser()
 parser.add_argument("model_path")
-parser.add_argument("csv_file")
+parser.add_argument("--csv_file", default="data/training_set.tsv")
 parser.add_argument("--write_predictions")
-parser.add_argument("--tokenizer", default="model/tokenizer.pkl")
+parser.add_argument("--tokenizer", default="model/tokenizer_studystack_full.pkl")
 parser.add_argument("--rnn", choices=["LSTM", "GRU"], default="GRU")
 parser.add_argument("--embed_size", type=int, default=300)
 parser.add_argument("--hidden_size", type=int, default=1024)
