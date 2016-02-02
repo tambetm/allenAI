@@ -31,7 +31,7 @@ def load_training_data_text(text_path, tokenizer, args):
 def generate_training_data_pickle(data_path, args):
   assert args.nsamples is None, "--nsamples cannot be used with generator"
 
-  data = load_training_data_pickle(data_path)
+  data = load_training_data_pickle(data_path, args)
   while True:
     for i in xrange(0, data.shape[0], args.batch_size):
       #print "Iteration:", i
@@ -48,14 +48,17 @@ def generate_training_data_text(data_path, tokenizer, args):
 
   while True:
     with open(data_path) as f:
-      lines = list(islice(f, args.batch_size))
-      x = text_to_data(lines, tokenizer, args.maxlen) 
-      y = np.empty((x.shape[0], args.hidden_size))
-      #print "X,y:", x.shape, y.shape
-      if args.bidirectional:
-        yield {'input': x, 'output': y}
-      else:
-        yield x, y
+      while True:
+        lines = list(islice(f, args.batch_size))
+        if not lines:
+          break;
+        x = text_to_data(lines, tokenizer, args.maxlen) 
+        y = np.empty((x.shape[0], args.hidden_size))
+        #print "X,y:", x.shape, y.shape
+        if args.bidirectional:
+          yield {'input': x, 'output': y}
+        else:
+          yield x, y
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -72,6 +75,7 @@ if __name__ == '__main__':
   add_training_params(parser)
   add_data_params(parser)
   args = parser.parse_args()
+  #assert args.samples_per_epoch % args.batch_size == 0, "Samples per epoch must be divisible by batch size."
 
   print "Loading tokenizer..."
   tokenizer = load_tokenizer(args.load_tokenizer)
@@ -110,7 +114,6 @@ if __name__ == '__main__':
   if args.generator:
     history = fit_generator(model, generator, args)
   else:
-    print "Data:", data.shape
     history = fit_data(model, data, args)
 
   if args.save_history:

@@ -156,7 +156,7 @@ class TestAccuracy(Callback):
   def on_epoch_end(self, epoch, logs={}):
     pred = predict_data(self.model, self.test_data, self.args)
     preds = convert_test_predictions(pred)
-    acc = calculate_accuracy(preds, corrects)
+    acc = calculate_accuracy(preds, self.corrects)
     # TODO: how to do this?
     logs['val_acc'] = acc
 
@@ -164,7 +164,7 @@ def default_callbacks(args, callbacks=[]):
   if args.csv_file:
     callbacks.append(TestAccuracy(args.csv_file, args))
   if args.model_path:
-    callbacks.append(ModelCheckpoint(filepath="%s_{epoch:02d}_loss_{val_acc:.2f}.hdf5" % args.model_path, monitor="val_acc", verbose=1, save_best_only=False))
+    callbacks.append(ModelCheckpoint(filepath="%s_{epoch:02d}_acc_{val_acc:.4f}.hdf5" % args.model_path, monitor="val_acc", verbose=1, save_best_only=False))
   if args.patience:
     callbacks.append(EarlyStopping(patience=args.patience, monitor="val_acc", verbose=1))
   return callbacks
@@ -199,7 +199,7 @@ def predict_data(model, data, args):
   else:
     pred = model.predict(data, batch_size=args.batch_size, verbose=args.verbose)
 
-  print "Predictions: ", pred.shape
+  #print "Predictions: ", pred.shape
   return pred
 
 def add_model_params(parser):
@@ -224,9 +224,9 @@ def add_model_params(parser):
   parser.add_argument("--loss", choices=['cosine', 'gesd', 'aesd'], default='cosine')
 
 def add_training_params(parser):
-  parser.add_argument("--samples_per_epoch", type=int, default=1000000)
+  parser.add_argument("--samples_per_epoch", type=int, default=1500000)
   parser.add_argument("--epochs", type=int, default=100)
-  parser.add_argument("--validation_split", type=float, default=0.01)
+  parser.add_argument("--validation_split", type=float, default=0)
   parser.add_argument("--optimizer", choices=['adam', 'rmsprop'], default='adam')
   parser.add_argument("--patience", type=int, default=10)
   parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
