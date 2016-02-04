@@ -9,8 +9,10 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 def find_model_file(model_path):
   files = list(glob.iglob(model_path+'*.hdf5'))
-  assert len(files) > 0, "Model path doesn't match any files"
-  return max(files, key=os.path.getmtime)
+  if len(files) > 0:
+    return max(files, key=os.path.getmtime)
+  else:
+    return None
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -23,7 +25,7 @@ if __name__ == '__main__':
   parser.add_argument("--max_margin", type=float, default=0.2)
   parser.add_argument("--load_arch")
   parser.add_argument("--save_arch")
-  parser.add_argument("--update_model", action="store_true", default=False)
+  parser.add_argument("--update_path")
   add_model_params(parser)
   add_training_params(parser)
   add_data_params(parser)
@@ -43,19 +45,15 @@ if __name__ == '__main__':
 
   model.summary()
 
-  if args.update_model:
-    model_file = find_model_file(args.model_path)
-  else:
-    model_file = args.model_path
-
-  print "Loading weights from %s" % model_file
-  model.load_weights(model_file)
+  print "Loading weights from %s" % args.model_path
+  model.load_weights(args.model_path)
 
   print "Compiling model..."
   compile_model(model, args)
 
   print "Sampling data to", args.output_path
   output = open(args.output_path, "a")
+  model_file = None
   while True:
     with open(args.data_path) as f:
       reader = csv.reader(f, delimiter="\t", strict=True, quoting=csv.QUOTE_NONE)
@@ -113,9 +111,9 @@ if __name__ == '__main__':
 
         output.flush()
 
-        if args.update_model:
-          new_model_file = find_model_file(args.model_path)
-          if new_model_file != model_file:
+        if args.update_path:
+          new_model_file = find_model_file(args.update_path)
+          if new_model_file is not None and new_model_file != model_file:
             model_file = new_model_file
             print "Loading weights from", model_file
             model.load_weights(model_file)
