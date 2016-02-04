@@ -3,7 +3,7 @@ import cPickle as pickle
 import numpy as np
 from keras.models import model_from_json
 from itertools import islice
-from model2 import *
+from model_split import *
 from preprocess import *
 
 def load_training_data_pickle(data_path, args):

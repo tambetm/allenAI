@@ -1,34 +1,18 @@
 import argparse
 import csv
-from model2 import *
+from model import *
 from preprocess import *
 
 def load_test_data(csv_file):
-  ids = []
-  questions = []
-  corrects = []
-  answersA = []
-  answersB = []
-  answersC = []
-  answersD = []
   with open(csv_file) as f:
     reader = csv.reader(f, delimiter="\t", strict=True, quoting=csv.QUOTE_NONE)
     header = next(reader)  # ignore header
     is_train_set = (len(header) == 7)
-    for line in reader:
-      ids.append(line[0])
-      questions.append(line[1])
-      if is_train_set:
-        corrects.append(line[2])
-        answersA.append(line[3])
-        answersB.append(line[4])
-        answersC.append(line[5])
-        answersD.append(line[6])
-      else:
-        answersA.append(line[2])
-        answersB.append(line[3])
-        answersC.append(line[4])
-        answersD.append(line[5])
+    if is_train_set:
+      ids, questions, corrects, answersA, answersB, answersC, answersD = zip(*list(reader))
+    else:
+      ids, questions, answersA, answersB, answersC, answersD = zip(*list(reader))
+      corrects = []
   print "Questions: ", len(questions)
   assert len(questions) == len(answersA) == len(answersB) == len(answersC) == len(answersD)
   assert not is_train_set or len(corrects) == len(questions)
@@ -40,60 +24,56 @@ def load_test_data(csv_file):
   return ids, questions, answersA, answersB, answersC, answersD, corrects
 
 def convert_test_data(questions, answersA, answersB, answersC, answersD, tokenizer, maxlen):
-  data = (
-    text_to_data(questions, tokenizer, maxlen),
-    text_to_data(answersA, tokenizer, maxlen),
-    text_to_data(answersB, tokenizer, maxlen),
-    text_to_data(answersC, tokenizer, maxlen),
-    text_to_data(answersD, tokenizer, maxlen),
-  )
-  return data
+  texts = []
+  for i, q in enumerate(questions):
+    texts.append(q + " " + answersA[i])
+    texts.append(q + " " + answersB[i])
+    texts.append(q + " " + answersC[i])
+    texts.append(q + " " + answersD[i])
+  print "Texts size:", len(texts)
+
+  data = text_to_data(texts, tokenizer, maxlen)
+  print "Data:", data.shape
+  inputs = data[:,:-1]  # discard the last word of answer
+  outputs = data[:,1:]  # shift all words left by one
+  print "Inputs:", inputs.shape, "Outputs:", outputs.shape
+  return inputs, outputs
 
 def np_l2_normalize(x, axis):
     norm = np.sqrt(np.sum(np.square(x), axis=axis, keepdims=True))
     return x / norm
 
 def np_cosine_similarity(y_true, y_pred):
-    assert y_true.ndim == 2
-    assert y_pred.ndim == 2
-    y_true = np_l2_normalize(y_true, axis=1)
-    y_pred = np_l2_normalize(y_pred, axis=1)
-    return np.sum(y_true * y_pred, axis=1, keepdims=False)
+    assert y_true.ndim == 3
+    assert y_pred.ndim == 3
+    y_true = np_l2_normalize(y_true, axis=2)
+    y_pred = np_l2_normalize(y_pred, axis=2)
+    return np.mean(np.sum(y_true * y_pred, axis=2), axis=1, keepdims=False)
 
-def convert_test_predictions(pred):
-  qlen = int(pred.shape[1] / 5)
-  questions = pred[:,0:qlen]
-  answersA = pred[:,qlen:2*qlen]
-  answersB = pred[:,2*qlen:3*qlen]
-  answersC = pred[:,3*qlen:4*qlen]
-  answersD = pred[:,4*qlen:5*qlen]
-  '''
-  print "Predicted vectors:", questions.shape, answersA.shape, answersB.shape, answersC.shape, answersD.shape
-  print "Question:", questions[0,:4]
-  print "Answer A:", answersA[0,:4]
-  print "Answer B:", answersB[0,:4]
-  print "Answer C:", answersC[0,:4]
-  print "Answer D:", answersD[0,:4]
-  '''
-  sims = np.array([
-    np_cosine_similarity(questions, answersA),
-    np_cosine_similarity(questions, answersB),
-    np_cosine_similarity(questions, answersC),
-    np_cosine_similarity(questions, answersD)
-  ])
-  '''
-  print "Similarities:", sims.shape
-  print "Question 1:", sims[:,0]
-  print "Question 2:", sims[:,1]
-  print "Question 3:", sims[:,2]
-  '''
+def convert_test_predictions(pred, args):
+  print "pred:", pred.shape
+  y_pred = pred[:,:,:args.embed_size]
+  y_true = pred[:,:,args.embed_size:]
+  print "y_pred:", y_pred.shape, "y_true:", y_true.shape
 
-  preds = np.argmax(sims, axis=0)
-  #print "Predictions:", preds.shape
-  #print "Predicted answers:", preds[:3]
+  print "y_pred=", y_pred[0,0]
+  print "y_true=", y_true[0,0]
+
+  sims = np_cosine_similarity(y_true, y_pred)
+  print "sims:", sims.shape
+  sims = sims.reshape((-1, 4))
+  print "after reshape:", sims.shape
+  print "Similarities:"
+  print sims[0]
+  print sims[1]
+  print sims[2]
+
+  preds = np.argmax(sims, axis=1)
+  print "Predictions:", preds.shape
+  print "Predicted answers:", preds[:3]
 
   preds = [chr(ord('A') + p) for p in preds]
-  #print "Predicted answers:", preds[:3]
+  print "Predicted answers:", preds[:3]
 
   return preds
 
@@ -151,7 +131,7 @@ if __name__ == '__main__':
 
   print "Predicting..."
   pred = predict_data(model, data, args)
-  preds = convert_test_predictions(pred)
+  preds = convert_test_predictions(pred, args)
 
   if args.write_predictions:
     print "Writing predictions to", args.write_predictions

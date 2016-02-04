@@ -11,7 +11,7 @@ from keras.models import model_from_json
 import theano.tensor as T
 from theano import function
 from itertools import islice
-from predict2 import *
+from predict_split import *
 
 def create_model(vocab_size, args):
   if args.rnn == 'GRU':
