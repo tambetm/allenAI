@@ -16,8 +16,8 @@ def find_model_file(model_path):
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
-  parser.add_argument("model_path")
   parser.add_argument("output_path")
+  parser.add_argument("--load_model")
   parser.add_argument("--data_path", default="/storage/hpc_tanel/allenAI/studystack_qa_cleaner_no_qm.txt")
   parser.add_argument("--load_tokenizer", default="model/tokenizer_studystack_full.pkl")
   parser.add_argument("--macrobatch_size", type=int, default=1000)
@@ -45,8 +45,9 @@ if __name__ == '__main__':
 
   model.summary()
 
-  print "Loading weights from %s" % args.model_path
-  model.load_weights(args.model_path)
+  if args.load_model:
+    print "Loading weights from %s" % args.load_model
+    model.load_weights(args.load_model)
 
   print "Compiling model..."
   compile_model(model, args)
