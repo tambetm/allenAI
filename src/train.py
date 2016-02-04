@@ -67,7 +67,7 @@ if __name__ == '__main__':
   parser.add_argument("--nsamples", type=int)
   parser.add_argument("--csv_file", default="data/training_set.tsv")
   parser.add_argument("--load_tokenizer", default="model/tokenizer_studystack_full.pkl")
-  parser.add_argument("--load_weights")
+  parser.add_argument("--load_model")
   parser.add_argument("--load_arch")
   parser.add_argument("--save_arch")
   parser.add_argument("--generator", action="store_true", default=True)
@@ -108,9 +108,9 @@ if __name__ == '__main__':
     print "Saving model architecture to", args.save_arch
     open(args.save_arch, 'w').write(model.to_json())
 
-  if args.load_weights:
-    print "Loading weights from %s" % args.load_weights
-    model.load_weights(args.load_weights)
+  if args.load_model:
+    print "Loading weights from %s" % args.load_model
+    model.load_weights(args.load_model)
 
   print "Compiling model..."
   compile_model(model, args)
