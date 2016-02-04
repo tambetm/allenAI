@@ -213,7 +213,7 @@ def add_model_params(parser):
   parser.add_argument("--dropout", type=float, default=0)
   parser.add_argument("--bidirectional", action='store_true', default=False)
   parser.add_argument("--batch_size", type=int, default=300)
-  parser.add_argument("--margin", type=float, default=0.1)
+  parser.add_argument("--margin", type=float, default=0.2)
   parser.add_argument("--dense_layers", type=int, default=0)
   parser.add_argument("--dense_activation", choices=['relu','sigmoid','tanh'], default='relu')
   parser.add_argument("--convolution", action='store_true', default=False)

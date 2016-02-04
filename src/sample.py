@@ -3,31 +3,7 @@ import csv
 from random import shuffle
 from model import *
 from preprocess import *
-
-def load_data_text(text_path, tokenizer, args):
-
-  print "lines:", len(lines)
-  '''
-  print "Sample lines:"
-  print lines[0]
-  print lines[1]
-  print lines[2]
-  '''
-  if args.nquestions is not None:
-    lines = lines[:args.nquestions]
-
-  data = text_to_data(lines, tokenizer, args.maxlen)
-  inputs = data[:,:-1]  # discard the last word of answer
-  outputs = data[:,1:]  # shift all words left by one
-
-  print "inputs:", inputs.shape, "outputs:", outputs.shape
-  '''
-  print "Sample input, output"
-  print inputs[0], outputs[0]
-  print inputs[1], outputs[1]
-  print inputs[2], outputs[2]
-  '''
-  return inputs, outputs
+from sklearn.metrics.pairwise import pairwise_distances
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -101,22 +77,25 @@ if __name__ == '__main__':
         question_vectors = pred[0:half]
         answer_vectors = pred[half:]
         print "question_vectors:", question_vectors.shape, "answer_vectors.shape", answer_vectors.shape
+        dists = pairwise_distances(question_vectors, answer_vectors, metric="cosine", n_jobs=1)
+        print "distances:", dists.shape
 
-        for i, q in enumerate(question_vectors):
-          q = q[np.newaxis, ...]
-          sims = np_cosine_similarity(q, answer_vectors)
-          sorted = reversed(np.argsort(sims))
-          print ""
-          print "question %d:" % i, questions[i]
+        for i in xrange(len(questions)):
+          sorted = np.argsort(dists[i])
+          #print ""
+          #print "question %d:" % i, questions[i]
           for j in sorted:
-            print "answer %d:" % j, answers[j], "(correct answer: %s)" % answers[i]
-            print "similarity:", sims[j], "(margin %f)" % (sims[i] - sims[j])
+            margin = dists[i,j] - dists[i,i]
+            #print "answer %d:" % j, answers[j], "(correct answer: %s)" % answers[i]
+            #print "distance:", dists[i,j], "(margin %f)" % margin
             if j != i and answers[j].strip().lower() != answers[i].strip().lower() \
-                and (args.min_margin is None or sims[i] - sims[j] > args.min_margin):
-              if (args.max_margin is None or sims[i] - sims[j] < args.max_margin):
+                and (args.min_margin is None or margin > args.min_margin):
+              if (args.max_margin is None or margin < args.max_margin):
                 output.write(questions[i]+"\n")
                 output.write(answers[i]+"\n")
                 output.write(answers[j]+"\n")
               else:
                 print "discarded"
               break
+
+        output.flush()
