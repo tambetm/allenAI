@@ -4,31 +4,15 @@ from model_split import *
 from preprocess import *
 
 def load_test_data(csv_file):
-  ids = []
-  questions = []
-  corrects = []
-  answersA = []
-  answersB = []
-  answersC = []
-  answersD = []
   with open(csv_file) as f:
     reader = csv.reader(f, delimiter="\t", strict=True, quoting=csv.QUOTE_NONE)
     header = next(reader)  # ignore header
     is_train_set = (len(header) == 7)
-    for line in reader:
-      ids.append(line[0])
-      questions.append(line[1])
-      if is_train_set:
-        corrects.append(line[2])
-        answersA.append(line[3])
-        answersB.append(line[4])
-        answersC.append(line[5])
-        answersD.append(line[6])
-      else:
-        answersA.append(line[2])
-        answersB.append(line[3])
-        answersC.append(line[4])
-        answersD.append(line[5])
+    if is_train_set:
+      ids, questions, corrects, answersA, answersB, answersC, answersD = zip(*list(reader))
+    else:
+      ids, questions, answersA, answersB, answersC, answersD = zip(*list(reader))
+      corrects = []
   print "Questions: ", len(questions)
   assert len(questions) == len(answersA) == len(answersB) == len(answersC) == len(answersD)
   assert not is_train_set or len(corrects) == len(questions)

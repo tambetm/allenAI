@@ -163,6 +163,13 @@ def predict_data(model, data, args):
   print "Predictions: ", pred.shape
   return pred
 
+def predict_data2(model, data, args):
+  pred = model.predict({'question': data[0], 'pos_answer': data[1], 'neg_answer': data[2]}, batch_size=args.batch_size, verbose=args.verbose)
+  pred = pred['output']
+
+  print "Predictions: ", pred.shape
+  return pred
+
 def add_model_params(parser):
   parser.add_argument("--rnn", choices=["LSTM", "GRU"], default="GRU")
   parser.add_argument("--embed_size", type=int, default=300)
