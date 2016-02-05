@@ -152,7 +152,7 @@ class TestAccuracy(Callback):
 
   def on_epoch_end(self, epoch, logs={}):
     pred = predict_data(self.model, self.test_data, self.args)
-    preds = convert_test_predictions(pred)
+    preds, sims = convert_test_predictions(pred)
     acc = calculate_accuracy(preds, self.corrects)
     # TODO: how to do this?
     logs['val_acc'] = acc

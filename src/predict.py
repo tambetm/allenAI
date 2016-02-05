@@ -56,12 +56,12 @@ def convert_test_predictions(pred):
   print "Answer C:", answersC[0,:4]
   print "Answer D:", answersD[0,:4]
   '''
-  sims = np.array([
+  sims = [
     np_cosine_similarity(questions, answersA),
     np_cosine_similarity(questions, answersB),
     np_cosine_similarity(questions, answersC),
     np_cosine_similarity(questions, answersD)
-  ])
+  ]
   '''
   print "Similarities:", sims.shape
   print "Question 1:", sims[:,0]
@@ -76,7 +76,7 @@ def convert_test_predictions(pred):
   preds = [chr(ord('A') + p) for p in preds]
   #print "Predicted answers:", preds[:3]
 
-  return preds
+  return preds, sims
 
 def calculate_accuracy(preds, corrects):
   correct = sum([corrects[i] == p for i,p in enumerate(preds)])
@@ -84,11 +84,11 @@ def calculate_accuracy(preds, corrects):
   print "Correct: %d Total: %d Accuracy: %f" % (correct, len(preds), accuracy)
   return accuracy
 
-def write_predictions(file_path, ids, preds):
+def write_predictions(file_path, ids, preds, sims):
   with open(file_path, "w") as f:
-    f.write("id,correctAnswer\n")
+    writer = csv.writer(f, delimiter=',', quoting=csv.QUOTE_MINIMAL)
     for i in xrange(len(preds)):
-      f.write("%s,%s\n" % (ids[i], preds[i]))
+      writer.writerow((ids[i], preds[i], sims[0][i], sims[1][i], sims[2][i], sims[3][i]))
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -132,11 +132,11 @@ if __name__ == '__main__':
 
   print "Predicting..."
   pred = predict_data(model, data, args)
-  preds = convert_test_predictions(pred)
+  preds, sims = convert_test_predictions(pred)
 
   if args.write_predictions:
     print "Writing predictions to", args.write_predictions
-    write_predictions(args.write_predictions, ids, preds)
+    write_predictions(args.write_predictions, ids, preds, sims)
 
   if len(corrects) > 0:
     calculate_accuracy(preds, corrects)
