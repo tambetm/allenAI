@@ -62,7 +62,7 @@ if __name__ == '__main__':
       while True:
         # read macrobatch_size lines from reader
         lines = list(islice(reader, args.macrobatch_size))
-        print "Lines:", len(lines)
+        #print "Lines:", len(lines)
         if not lines:
           break;
 
@@ -76,22 +76,27 @@ if __name__ == '__main__':
         '''
         shuffle(lines)
         ids, questions, answers = zip(*lines)
-        print "ids:", len(ids), "questions:", len(questions), "answers:", len(answers)
+        #print "ids:", len(ids), "questions:", len(questions), "answers:", len(answers)
 
         texts = questions + answers
-        print "texts:", len(texts)
+        #print "texts:", len(texts)
         data = text_to_data(texts, tokenizer, args.maxlen)
-        print "data:", data.shape
+        #print "data:", data.shape
 
         pred = predict_data(model, data, args)
-        print "pred:", pred.shape
+        #print "pred:", pred.shape
         half = int(pred.shape[0] / 2)
         question_vectors = pred[0:half]
         answer_vectors = pred[half:]
-        print "question_vectors:", question_vectors.shape, "answer_vectors.shape", answer_vectors.shape
+        #print "question_vectors:", question_vectors.shape, "answer_vectors.shape", answer_vectors.shape
         dists = pairwise_distances(question_vectors, answer_vectors, metric="cosine", n_jobs=1)
-        print "distances:", dists.shape
+        #print "distances:", dists.shape
 
+        produced = 0
+        discarded = 0
+        total_pa_dist = 0
+        total_na_dist = 0
+        total_margin = 0
         for i in xrange(len(questions)):
           sorted = np.argsort(dists[i])
           #print ""
@@ -106,11 +111,19 @@ if __name__ == '__main__':
                 output.write(questions[i]+"\n")
                 output.write(answers[i]+"\n")
                 output.write(answers[j]+"\n")
+
+                total_pa_dist += dists[i,i]
+                total_na_dist += dists[i,j]
+                total_margin += margin
+                produced += 1
               else:
-                print "discarded"
+                discarded += 1
               break
 
         output.flush()
+        print "Read %d lines, wrote %d questions, discarded %d" % (len(lines), produced, discarded)
+        print "Average right answer distance %g, wrong answer distance %g, margin %g" % \
+            (total_pa_dist / produced, total_na_dist / produced, total_margin / produced)
 
         if args.update_path:
           new_model_file = find_model_file(args.update_path)
