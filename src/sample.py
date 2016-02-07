@@ -2,6 +2,7 @@ import argparse
 import csv
 import glob
 import os
+import sys
 from random import shuffle
 from model import *
 from preprocess import *
@@ -57,6 +58,7 @@ if __name__ == '__main__':
   model_file = None
   while True:
     with open(args.data_path) as f:
+      csv.field_size_limit(sys.maxsize)
       reader = csv.reader(f, delimiter="\t", strict=True, quoting=csv.QUOTE_NONE)
 
       while True:
