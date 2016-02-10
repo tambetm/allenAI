@@ -41,7 +41,6 @@ def generate_training_data(data_path, tokenizer, model, args):
         data = text_to_data(texts, tokenizer, args.maxlen)
         #print "data:", data.shape
 
-        print ""
         pred = predict_data(model, data, args)
         #print "pred:", pred.shape
         half = int(pred.shape[0] / 2)
@@ -51,10 +50,10 @@ def generate_training_data(data_path, tokenizer, model, args):
         dists = pairwise_distances(question_vectors, answer_vectors, metric="cosine", n_jobs=1)
         #print "distances:", dists.shape
 
-        X = np.empty((3*half, data.shape[1]))
+        X = np.empty((args.batch_size, data.shape[1]))
+        y = np.empty((args.batch_size, args.hidden_size))
         n = 0
         produced = 0
-        discarded = 0
         total_pa_dist = 0
         total_na_dist = 0
         total_margin = 0
@@ -76,29 +75,24 @@ def generate_training_data(data_path, tokenizer, model, args):
                 #print "Question:", questions[i], data[i]
                 #print "Right answer:", answers[i], data[half + i]
                 #print "Wrong answer:", answers[j], data[half + j]
+                if n == args.batch_size:
+                  yield X, y
+                  n = 0
 
                 total_pa_dist += dists[i,i]
                 total_na_dist += dists[i,j]
                 total_margin += margin
                 produced += 1
-              else:
-                discarded += 1
               break
 
-        print "Read %d lines, used %d questions, discarded %d" % (len(lines), produced, discarded)
+        if n > 0:
+          yield X[:n], y[:n]
+
+        print ""
+        print "Read %d lines, used %d questions, discarded %d" % (len(lines), produced, len(lines) - produced)
         print "Average right answer distance %g, wrong answer distance %g, margin %g" % \
             (total_pa_dist / produced, total_na_dist / produced, total_margin / produced)
         print ""
-
-        y = np.empty((args.batch_size, args.hidden_size))
-        for b in xrange(0, n, args.batch_size):
-          if b + args.batch_size > n:
-            nb_samples = n - b
-          else:
-            nb_samples = args.batch_size
-
-          #print "b:", b, "nb_samples:", nb_samples
-          yield X[b:b + nb_samples], y[:nb_samples]
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
@@ -106,7 +100,7 @@ if __name__ == '__main__':
   parser.add_argument("--data_path", default="/storage/hpc_tanel/allenAI/combined.txt")
   parser.add_argument("--csv_file", default="data/training_set.tsv")
   parser.add_argument("--load_tokenizer", default="model/tokenizer_studystack_full.pkl")
-  parser.add_argument("--macrobatch_size", type=int, default=10000)
+  parser.add_argument("--macrobatch_size", type=int, default=1000)
   parser.add_argument("--min_margin", type=float, default=0)
   parser.add_argument("--max_margin", type=float, default=0.2)
   parser.add_argument("--load_model")
