@@ -197,18 +197,18 @@ def fit_generator(model, generator, args, callbacks = []):
 
 def predict_data(model, data, args):
   if args.bidirectional:
-    pred = model.predict({'input': data}, batch_size=args.batch_size, verbose=args.verbose)
+    pred = model.predict({'input': data}, batch_size=args.batch_size)
     pred = pred['output']
   else:
-    pred = model.predict(data, batch_size=args.batch_size, verbose=args.verbose)
+    pred = model.predict(data, batch_size=args.batch_size)
 
   #print "Predictions: ", pred.shape
   return pred
 
 def add_model_params(parser):
   parser.add_argument("--rnn", choices=["LSTM", "GRU"], default="GRU")
-  parser.add_argument("--embed_size", type=int, default=300)
-  parser.add_argument("--hidden_size", type=int, default=1024)
+  parser.add_argument("--embed_size", type=int, default=100)
+  parser.add_argument("--hidden_size", type=int, default=512)
   parser.add_argument("--layers", type=int, default=1)
   parser.add_argument("--dropout", type=float, default=0)
   parser.add_argument("--bidirectional", action='store_true', default=False)
