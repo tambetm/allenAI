@@ -30,7 +30,7 @@ def text_to_data(lines, tokenizer, maxlen):
 
 def add_data_params(parser):
   parser.add_argument("--max_words", type=int)
-  parser.add_argument("--maxlen", type=int)
+  parser.add_argument("--maxlen", type=int, default=255)
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
