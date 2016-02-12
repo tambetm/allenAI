@@ -197,10 +197,10 @@ def fit_generator(model, generator, args, callbacks = []):
 
 def predict_data(model, data, args):
   if args.bidirectional:
-    pred = model.predict({'input': data}, batch_size=args.batch_size)
+    pred = model.predict({'input': data}, batch_size=args.batch_size, verbose=args.verbose)
     pred = pred['output']
   else:
-    pred = model.predict(data, batch_size=args.batch_size)
+    pred = model.predict(data, batch_size=args.batch_size, verbose=args.verbose)
 
   #print "Predictions: ", pred.shape
   return pred
@@ -235,4 +235,4 @@ def add_training_params(parser):
   parser.add_argument("--samples_per_epoch", type=int, default=1500000)
   parser.add_argument("--epochs", type=int, default=100)
   parser.add_argument("--patience", type=int, default=10)
-  parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=1)
+  parser.add_argument("--verbose", type=int, choices=[0, 1, 2], default=0)
