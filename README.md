@@ -33,6 +33,8 @@ The architecture of the final network:
 
 Another important feature was that after each epoch we tested our model on Allen AI training set and included the accuracy in the file name of saved weights. This allowed to track much easier how the currently trained models are doing and which can be killed to make room for subsequent experiments. At some point we had 10 GPUs running different experiments.
 
+We used excellent [Keras toolkit](http://keras.io/) for implementing the model.
+
 ### How to run the training
 
 To run the training with deep model:
@@ -75,6 +77,23 @@ python src/predict.py model/test_00_loss_0.1960_acc_0.2868.hdf5
 
 By default it just calculates accuracy on Allen AI training set. You may want to use following options:
  * `--csv_file` - the file to calculate predictions for, default is Allen AI training set, but can also be `data/validation_set.tsv` or `data/test_set.tsv`. The code handles the missing "correct" column automatically.
- * `--write_predictions` - write predictions in CSV file. The first column is question id, the second is right answer,  followed by scores (cosine similarities) for all answers. The file format was supposed to be compatible with Kaggle submission, but for ensembling purposes we had to include scores too.
+ * `--write_predictions` - write predictions in CSV file. The first column is question id, the second is predicted answer,  followed by scores (cosine similarities) for all answers A, B, C and D. The file format was supposed to be compatible with Kaggle submission, but for ensembling purposes we had to include scores too.
 
 Many options for the training script apply as well. For example you need to match the hidden layer size and number of layers with saved model, otherwise it will give an error.
+
+### How to run the preprocessing
+
+The preprocessing is mostly used to produce tokenizer. Tokenizer determines the vocabulary size and embedding layer size in network. We used Keras default tokenizer class, which proved sufficient for our purposes. There is actually no need to run preprocessing, because the tokenizer for default dataset is already included in the repository. The instructions are included here just in case you want to use your own dataset.
+
+First you need to get rid of the id field in original data file, so it doesn't clutter the vocabulary:
+```
+cut -f2,3 data/studystack_qa_cleaner_no_qm.txt >data/studystack.txt
+```
+
+Then run preprocessing on it:
+```
+python src/preprocess.py data/studystack --save_tokenizer model/tokenizer_studystack.pkl
+```
+
+Additional options:
+ * `--max_words` - limit the vocabulary to this number of most frequent words. Beware that if you limit the number of words, Keras default tokenizer just removes all the rare words from sentences, instead of replacing them with "UNKNOWN".
