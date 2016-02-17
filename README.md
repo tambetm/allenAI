@@ -39,7 +39,7 @@ We used excellent [Keras toolkit](http://keras.io/) for implementing the model.
 
 To run the training with deep model:
 ```
-python deep/train_online.py model/test
+python src/train_online.py model/test
 ```
 
 The only required parameter is the path where to save the models. In this example the file names will be something like `model/test_00_loss_0.1960_acc_0.2868.hdf5`, where `00` is the epoch number (starting from 0), `0.1960` is the training loss and `0.2868` is the accuracy on validation set (usually Allen AI training set).
@@ -97,3 +97,29 @@ python src/preprocess.py data/studystack --save_tokenizer model/tokenizer_studys
 
 Additional options:
  * `--max_words` - limit the vocabulary to this number of most frequent words. Beware that if you limit the number of words, Keras default tokenizer just removes all the rare words from sentences, instead of replacing them with "UNKNOWN".
+
+## Information Retrieval Model
+
+We did the information retrieval model on the last day and didn't tune it much. Basically we imported all our questions and answers to [Lucene](https://lucene.apache.org/) and used simple text search to find most similar questions to given question and then matched the four possible answers with correct answers to those questions. Important idea was to multiply the scores of questions and answers, and sum all the results per each possible answer. This can be illustrated with following table:
+
+| Question | Question Score | Answer A Score | Answer B Score | Answer C Score | Answer D Score |
+|----------|---------------:|---------------:|---------------:|---------------:|---------------:|
+| Question 1 | 6 | 0.1 | 0.1 | 0.4 | 0.1 |
+| Question 2 | 4 | 0 | 0.2 | 0 | 0.1 |
+| Question 3 | 2 | 0.3 | 0 | 0 | 0 |
+| **Total** | | **1.2** |	**1.4** |	**2.4** |	**1.0** |
+
+In the above example answer C has the highest total score and is therefore the best bet for the right answer. We used Lucene default scoring function both for scoring questions and answers. Because I couldn't find a ways to score similarity of two strings in Lucene, I had to do it in really braindead way - I created a dummy index in memory, added only one document with answer there and then searched it with all possible answers. Surprisingly it wasn't that slow and worked rather well.
+
+Using this approach with 10 most similar questions got us accuracy 42%. We were quite surprised, when using the exact same method with 100 most similar questions resulted in 49.6%! Using 1000 questions improved it further to 51.6%, but 2000 got us back to 50.88%. We are not sure yet why increasing the number of questions to ridiculous numbers works, but we noticed that in many cases the answer scores are zeros and considering many questions might give more chance for reasonable guess.
+
+### How to run indexing
+
+Run IPython notebook in `lucene` folder and go through the `term_index.ipynb`. This should produce folder `index`.
+
+### How to run prediction
+
+Open `term_search.ipynb` and step through it. You may want to change the number of similar questions on this line:
+```
+result = searcher.search(query, 100)
+```
