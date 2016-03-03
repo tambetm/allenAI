@@ -97,9 +97,9 @@ def generate_training_data(data_path, tokenizer, model, args):
 if __name__ == '__main__':
   parser = argparse.ArgumentParser()
   parser.add_argument("model_path")
-  parser.add_argument("--data_path", default="/storage/hpc_tanel/allenAI/combined.txt")
+  parser.add_argument("--data_path", default="data/studystack_qa_cleaner_no_qm.txt")
   parser.add_argument("--csv_file", default="data/training_set.tsv")
-  parser.add_argument("--load_tokenizer", default="model/tokenizer_combined.pkl")
+  parser.add_argument("--load_tokenizer", default="model/tokenizer_studystack_full.pkl")
   parser.add_argument("--macrobatch_size", type=int, default=1000)
   parser.add_argument("--min_margin", type=float, default=0)
   parser.add_argument("--max_margin", type=float, default=0.2)
