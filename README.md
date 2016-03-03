@@ -4,7 +4,7 @@ This is the code that got our team "Cappucino Monkeys" 4th place at [The Allen A
 
 In this competition your program has to do well in standardized 8th grade science exam. The exam consists of multiple choice questions spanning biology, chemistry, physics, math and so on. Each question has four possible answers, of which exactly one is correct.
 
-We ended up ensembling 5 deep learning models and 3 information retrieval models. Most of the code was written during one week at [DeepHack.Q&A](http://qa.deephack.me/) hackathon in Moscow.
+We ended up ensembling 5 deep learning models and 4 information retrieval models. Most of the code was written during one week at [DeepHack.Q&A](http://qa.deephack.me/) hackathon in Moscow.
 
 ## Dataset
 
@@ -24,7 +24,7 @@ One nice trick was, that we didn't have 3 separate (shared) branches in the netw
 
 Our dataset had only right answers, but loss function needed wrong answers as well, so we had to produce them  ourselves. This is called "negative sampling" (right answer is the "positive sample" and wrong answer is the "negative sample"). We used strategy similar to [Google FaceNet](http://arxiv.org/abs/1503.03832) to choose wrong answers from the same (macro)batch. 
 
-For the network to learn well, it is useful to not feed random wrong answers to it, but those that are "hard". That means answers that are wrong, but close to question in the cosine distance. But if you feed only the hardest questions to the network, it fails to converge, it is just "too hard". Instead people have found that using "semi-hard negative samples" - answers, which are further than right answer, but still within the margin - works best. And that's what we did.
+For the network to learn well, it is useful to not feed random wrong answers to it, but those that are "hard". That means answers that are wrong, but close to question in the cosine distance. But if you feed only the hardest questions to the network, it fails to converge, it is just "too hard". Instead people have found that using "semi-hard negative samples" - answers, which are further than the right answer, but still within the margin - works best. And that's what we did.
 
 Another important feature was that after each epoch we tested our model on Allen AI training set and included the accuracy in the file name of saved weights. This allowed to track much easier how the currently trained models are doing and which can be killed to make room for subsequent experiments. At some point we had 10 GPUs running different experiments.
 
@@ -74,11 +74,11 @@ To run prediction with deep model:
 python src/predict.py model/test_00_loss_0.1960_acc_0.2868.hdf5
 ```
 
-By default it just calculates accuracy on Allen AI training set. You may want to use following options:
+The only required parameter is path to the model file. By default it just calculates accuracy on Allen AI training set, you need to use following options to produce predictions on other sets:
  * `--csv_file` - the file to calculate predictions for, default is `data/training_set.tsv`, but can also be `data/validation_set.tsv` or `data/test_set.tsv`. The code handles the missing "correct" column automatically.
  * `--write_predictions` - write predictions in CSV file. The first column is question id, the second is predicted answer,  followed by scores (cosine similarities) for all answers A, B, C and D. The file format was supposed to be compatible with Kaggle submission, but for ensembling purposes we had to include scores too.
 
-Many options for the training script apply as well. For example you need to match the hidden layer size and number of layers with saved model, otherwise it will give an error.
+Many options for the training script apply here as well. For example you need to match the hidden layer size and number of layers with saved model, otherwise it will give an error.
 
 ### How to run the preprocessing
 
