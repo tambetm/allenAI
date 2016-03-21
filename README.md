@@ -91,7 +91,7 @@ cut -f2,3 data/studystack_qa_cleaner_no_qm.txt >data/studystack.txt
 
 Then run preprocessing on it:
 ```
-python src/preprocess.py data/studystack --save_tokenizer model/tokenizer_studystack.pkl
+python src/preprocess.py data/studystack.txt --save_tokenizer model/tokenizer_studystack.pkl
 ```
 
 Additional options:
