@@ -20,11 +20,17 @@ You will also need `training_set.tsv`, `validation_set.tsv` and/or `test_set.tsv
 
 Our deep learning approach was inspired by a paper from IBM Watson group: [LSTM-based Deep Learning Models for Non-factoid Answer Selection](http://arxiv.org/abs/1511.04108). We used recurrent neural networks to get sentence vector for both question and answer. Then we used cosine ranking loss to make cosine similarity for the question and the right answer bigger than for the question and wrong answer (by some margin).
 
+![Cosine ranking loss](images/cosine_ranking_loss.png?raw=true)
+
 One nice trick was, that we didn't have 3 separate (shared) branches in the network, but instead used one network and combined questions, right answers and wrong answers sequentially in batch. Loss function considered every third sample in batch as question, every other third as right answer and another third as wrong answer. This simplified the network architecture greatly and made it possible to use it in prediction phase with any number of answers.
+
+![Batch layout](images/batch.png?raw=true)
 
 Our dataset had only right answers, but loss function needed wrong answers as well, so we had to produce them  ourselves. This is called "negative sampling" (right answer is the "positive sample" and wrong answer is the "negative sample"). We used strategy similar to [Google FaceNet](http://arxiv.org/abs/1503.03832) to choose wrong answers from the same (macro)batch. 
 
 For the network to learn well, it is useful to not feed random wrong answers to it, but those that are "hard". That means answers that are wrong, but close to question in the cosine distance. But if you feed only the hardest questions to the network, it fails to converge, it is just "too hard". Instead people have found that using "semi-hard negative samples" - answers, which are further than the right answer, but still within the margin - works best. And that's what we did.
+
+![Negative sampling](images/negative_sampling.png?raw=true)
 
 Another important feature was that after each epoch we tested our model on Allen AI training set and included the accuracy in the file name of saved weights. This allowed to track much easier how the currently trained models are doing and which can be killed to make room for subsequent experiments. At some point we had 10 GPUs running different experiments.
 
