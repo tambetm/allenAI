@@ -143,11 +143,11 @@ result = searcher.search(query, 100)
 | lucene100  |       49.60% |                 |                  |
 | lucene500  |       51.16% |                 |                  |
 | lucene1000 |       51.60% |         48.125% |          49.803% |
-| Google Search |         ? |                 |                  |
+| Google Search baseline |         ? |                 |                  |
 | _**Ensembles**_ |
 | Deep5+Lucene3+GS |        |         53.125% |          56.242% |
 | Deep5      |              |         48.875% |          50.460% |
 | Lucene3    |              |         49.750% |          51.205% |
-| Without GS |              |         50.750% |          54.621% |
+| Deep5+Lucene3 |              |         50.750% |          54.621% |
 
 This was our first serious Kaggle competition and we never expected to be in the prize range. For that reason we did not upload our model and did not pay too much attention to the rules about which datasets and services can be used. But we hope we can serve the community by publishing our results with non-standard data sources as well.
