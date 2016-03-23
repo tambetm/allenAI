@@ -140,14 +140,14 @@ result = searcher.search(query, 100)
 | deep4800   |       48.00% |                 |          46.430% |
 | deep4812   |       48.12% |                 |          46.605% |
 | _**Information retrieval models**_ |
-| lucene100  |       49.60% |                 |                  |
-| lucene500  |       51.16% |                 |                  |
+| lucene100  |       49.60% |                 |          49.365% |
+| lucene500  |       51.16% |                 |          50.591% |
 | lucene1000 |       51.60% |         48.125% |          49.803% |
-| Google Search baseline | ?|                 |                  |
+| Google Search baseline | 42.17% |           |          45.204% |
 | _**Ensembles**_ |
 | Deep5+Lucene3+GS |        |         53.125% |          56.242% |
-| Deep5      |              |         48.875% |          50.460% |
-| Lucene3    |              |         49.750% |          51.205% |
-| Deep5+Lucene3 |           |         50.750% |          54.621% |
+| Deep5            |        |         48.875% |          50.460% |
+| Lucene3          |        |         49.750% |          51.205% |
+| Deep5+Lucene3    |        |         50.750% |          54.621% |
 
 This was our first serious Kaggle competition and we never expected to be in the prize range. For that reason we did not upload our model and did not pay too much attention to the rules about which datasets and services can be used. But we hope we can serve the community by publishing our results with non-standard data sources as well.
