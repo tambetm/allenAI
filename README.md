@@ -18,7 +18,7 @@ You will also need `training_set.tsv`, `validation_set.tsv` and/or `test_set.tsv
 
 ## Deep Learning Model
 
-Our deep learning approach was inspired by a paper from IBM Watson group: [LSTM-based Deep Learning Models for Non-factoid Answer Selection](http://arxiv.org/abs/1511.04108). We used recurrent neural networks to get sentence vector for both question and answer. Then we used cosine ranking loss to make cosine similarity for the question and the right answer bigger than for the question and wrong answer (by some margin).
+Our deep learning approach was inspired by a paper from IBM Watson group: [LSTM-based Deep Learning Models for Non-factoid Answer Selection](http://arxiv.org/abs/1511.04108). We used recurrent neural networks to get sentence vector for both question and answer. Then we used cosine ranking loss to make cosine distance for the question and the right answer smaller than for the question and wrong answer (by some margin).
 
 ![Cosine ranking loss](images/cosine_ranking_loss.png?raw=true)
 
@@ -84,6 +84,11 @@ The only required parameter is path to the model file. By default it just calcul
  * `--csv_file` - the file to calculate predictions for, default is `data/training_set.tsv`, but can also be `data/validation_set.tsv` or `data/test_set.tsv`. The code handles the missing "correct" column automatically.
  * `--write_predictions` - write predictions in CSV file. The first column is question id, the second is predicted answer,  followed by scores (cosine similarities) for all answers A, B, C and D. The file format was supposed to be compatible with Kaggle submission, but for ensembling purposes we had to include scores too.
 
+For example to run prediction on test set:
+```
+python src/predict.py model/test_00_loss_0.1960_acc_0.2868.hdf5 --csv_file data/test_set.tsv --write_predictions results/deep_predictions_test.csv
+```
+
 Many options for the training script apply here as well. For example you need to match the hidden layer size and number of layers with saved model, otherwise it will give an error.
 
 ### How to run the preprocessing
@@ -114,7 +119,9 @@ We did the information retrieval model on the last day and didn't tune it much. 
 | Question 3 | 2 | 0.3 | 0 | 0 | 0 |
 | **Total** | | **1.2** |	**1.4** |	**2.4** |	**1.0** |
 
-In the above example answer C has the highest total score and is therefore the best bet for the right answer. We used Lucene default scoring function both for scoring questions and answers. Because I couldn't find a way to calculate similarity of two strings in Lucene, I had to do it in really braindead way - I created a dummy index in memory, added only one document with answer there and then searched it with all possible answers. Surprisingly it wasn't that slow and worked rather well.
+In the above example three most similar questions to given question are shown, with similarity scores 6, 4 and 2. Each of the four possible answers to given question are matched with the right answer for similar question, and scored accordingly. Scores of questions and answers are multiplied and summed. In this example answer C has the highest total score and is therefore the best bet for the right answer. 
+
+We used Lucene default scoring function both for scoring questions and answers. Because I couldn't find a way to calculate similarity of two strings in Lucene, I had to do it in really braindead way - I created a dummy index in memory, added only one document with answer there and then searched it with all possible answers. Surprisingly it wasn't that slow and worked rather well.
 
 Using this approach with 10 most similar questions got us accuracy 42%. We were quite surprised, when using the exact same method with 100 most similar questions resulted in 49.6%! Using 1000 questions improved it further to 51.6%, but 2000 got us back to 50.88%. We are not sure yet why increasing the questions to ridiculous numbers works, but we noticed that in many cases all the answer scores are zeros, which always predicts answer A. Taking into account more questions might produce more non-zero scores for answers and give better chance for reasonable guess.
 
@@ -149,5 +156,21 @@ result = searcher.search(query, 100)
 | Deep5            |        |         48.875% |          50.460% |
 | Lucene3          |        |         49.750% |          51.205% |
 | Deep5+Lucene3    |        |         50.750% |          54.621% |
+
+Percentage of answers produced by different models that were the same:
+
+|            | deep4264 | deep4588 | deep4704 | deep4800 | deep4812 | lucene100 | lucene500 | lucene1000 |     GS |
+|------------|---------:|---------:|---------:|---------:|---------:|----------:|----------:|-----------:|-------:|
+| deep4264   |  100.00% |
+| deep4588   |   44.93% |  100.00% |
+| deep4704   |   43.60% |   55.31% |  100.00% |
+| deep4800   |   45.33% |   61.09% |   65.53% |  100.00% |
+| deep4812   |   44.47% |   60.90% |   63.53% |   74.34% |  100.00% |
+| lucene100  |   35.70% |   39.11% |   38.04% |   39.06% |   38.99% |   100.00% |
+| lucene500  |   37.38% |   40.81% |   39.97% |   40.60% |   40.70% |    69.12% |   100.00% |
+| lucene1000 |   37.52% |   40.39% |   39.79% |   40.31% |   40.20% |    63.04% |    85.72% |    100.00% |
+| GS         |   34.71% |   39.16% |   37.96% |   39.19% |   38.84% |    37.36% |    38.56% |     38.11% | 100.00% |
+
+As can be seen, different models produce substantially different answers, even when the dataset used to train them was the same.
 
 This was our first serious Kaggle competition and we never expected to be in the prize range. For that reason we did not upload our model and did not pay too much attention to the rules about which datasets and services can be used. But we hope we can serve the community by publishing our results with non-standard data sources as well.
