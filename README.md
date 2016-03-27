@@ -152,12 +152,12 @@ result = searcher.search(query, 100)
 | lucene1000 |       51.60% |         48.125% |          49.803% |
 | Google Search baseline | 42.17% |           |          45.204% |
 | _**Ensembles**_ |
-| Deep5+Lucene3+GS | 55.75% |         53.125% |          56.242% |
-| Deep5            | 50.12% |         48.875% |          50.460% |
-| Lucene3          | 51.76% |         49.750% |          51.205% |
-| Deep5+Lucene3    | 54.95% |         50.750% |          54.621% |
+| Deep5+Lucene3+GS | *55.75% |         53.125% |          56.242% |
+| Deep5            | *50.12% |         48.875% |          50.460% |
+| Lucene3          | *51.76% |         49.750% |          51.205% |
+| Deep5+Lucene3    | *54.95% |         50.750% |          54.621% |
 
-Ensemble model accuracies on training set are actually calculated on validation subset. Ensembling code is available on request.
+(*) Ensemble model accuracies on training set are actually calculated on validation subset. Ensembling code is available on request.
 
 Percentage of answers produced by different models that were the same:
 
