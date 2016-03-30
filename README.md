@@ -18,7 +18,7 @@ You will also need `training_set.tsv`, `validation_set.tsv` and/or `test_set.tsv
 
 ## Deep Learning Model
 
-Our deep learning approach was inspired by a paper from IBM Watson group: [LSTM-based Deep Learning Models for Non-factoid Answer Selection](http://arxiv.org/abs/1511.04108). We used recurrent neural networks to get sentence vector for both question and answer. Then we used cosine ranking loss to make cosine distance for the question and the right answer smaller than for the question and wrong answer (by some margin).
+Our deep learning approach was inspired by a paper from IBM Watson group: [LSTM-based Deep Learning Models for Non-factoid Answer Selection](http://arxiv.org/abs/1511.04108). We used recurrent neural networks to get sentence vector for both question and answer. Then we used cosine ranking loss to make cosine distance for the question and the right answer smaller than for the question and wrong answer (by some margin). In code we actually used cosine similarity but it is easier to explain using cosine distance.
 
 ![Cosine ranking loss](images/cosine_ranking_loss.png?raw=true)
 
